@@ -12,14 +12,16 @@ Ui.BarWidget {
   moduleName: "io.github.culcat.lock-topbar"
 
   // Settings & State
-  property bool isLocked: setting("locked", true)
-  property bool lockBackground: setting("lockBackground", true)
-  property bool lockLayout: setting("lockLayout", true)
-  property bool showNotifications: setting("showNotifications", true)
+  property bool isLocked: true
+  property bool lockBackground: true
+  property bool lockLayout: true
+  property bool showNotifications: true
   property bool popupOpen: false
 
-  // State file path for persistence across shell restarts
-  readonly property string stateFilePath: Quickshell.env("HOME") + "/.local/state/omarchy/lock-topbar.json"
+  // Paths
+  readonly property string homeDir: Quickshell.env("HOME")
+  readonly property string stateFilePath: homeDir + "/.local/state/omarchy/lock-topbar.json"
+  readonly property string pluginBinDir: homeDir + "/.config/omarchy/plugins/io.github.culcat.lock-topbar/bin"
 
   // Localization
   readonly property string systemLocale: {
@@ -35,7 +37,7 @@ Ui.BarWidget {
     return I18n.tr(language, key, a, b, c, d)
   }
 
-  // Visual appearance
+  // Visual geometry
   implicitWidth: iconButton.width
   implicitHeight: iconButton.height
 
@@ -87,7 +89,7 @@ Ui.BarWidget {
           text: root.isLocked ? "󰌾" : "󰌿"
           font.family: Commons.Style.font.family
           font.pixelSize: Commons.Style.font.title
-          color: root.isLocked ? Commons.Color.accent : Commons.Color.dimmed
+          color: root.isLocked ? Commons.Color.accent : Commons.Color.muted
           textFormat: Text.PlainText
         }
 
@@ -108,7 +110,7 @@ Ui.BarWidget {
             text: root.isLocked ? root.tr("panel.status_locked") : root.tr("panel.status_unlocked")
             font.family: Commons.Style.font.family
             font.pixelSize: Commons.Style.font.caption
-            color: root.isLocked ? Commons.Color.accent : Commons.Color.dimmed
+            color: root.isLocked ? Commons.Color.accent : Commons.Color.muted
             textFormat: Text.PlainText
           }
         }
@@ -132,6 +134,7 @@ Ui.BarWidget {
         onClicked: {
           root.lockBackground = !root.lockBackground
           root.saveState()
+          root.broadcastState()
         }
       }
 
@@ -144,6 +147,7 @@ Ui.BarWidget {
         onClicked: {
           root.lockLayout = !root.lockLayout
           root.saveState()
+          root.broadcastState()
         }
       }
 
@@ -156,6 +160,7 @@ Ui.BarWidget {
         onClicked: {
           root.showNotifications = !root.showNotifications
           root.saveState()
+          root.broadcastState()
         }
       }
     }
@@ -185,117 +190,50 @@ Ui.BarWidget {
     }
   }
 
+  // Synchronization between multi-monitor bar instances
+  function syncFromPeer(val, bg, layout, notify) {
+    isLocked = val
+    lockBackground = bg
+    lockLayout = layout
+    showNotifications = notify
+  }
+
+  function broadcastState() {
+    var items = bar && typeof bar.moduleWidgets === "function"
+      ? bar.moduleWidgets(moduleName) : [root]
+    for (var i = 0; i < items.length; i++) {
+      if (items[i] && items[i] !== root && typeof items[i].syncFromPeer === "function") {
+        items[i].syncFromPeer(isLocked, lockBackground, lockLayout, showNotifications)
+      }
+    }
+  }
+
   // Toggle & Mutator functions
   function toggleLock() {
     setLocked(!isLocked)
   }
 
   function setLocked(val) {
-    if (isLocked === val) return
     isLocked = val
     saveState()
+    broadcastState()
   }
 
-  // Send desktop notification when modification is blocked
-  function notifyBlocked(actionType) {
-    if (!showNotifications) return
-    var message = actionType === "background"
-      ? root.tr("notify.blocked_background")
-      : root.tr("notify.blocked_layout")
-
-    Quickshell.execDetached([
-      "omarchy-notification-send",
-      "-p",
-      "-r", "994821",
-      "-g", "󰌾",
-      root.tr("notify.blocked_title"),
-      message
-    ])
-  }
-
-  // Interception core: patches Commons.Util.execDetached
-  function installHooks() {
-    if (Commons.Util && !Commons.Util._lockTopBarIntercepted) {
-      Commons.Util._lockTopBarIntercepted = true
-      var origExec = Commons.Util.execDetached
-
-      Commons.Util.execDetached = function(command) {
-        if (root.isLocked && typeof command === "string") {
-          var isBgCycle = command.indexOf("omarchy-bar background cycle") !== -1 ||
-                          command.indexOf("omarchy-bar background") !== -1
-          var isLayoutToggle = command.indexOf("omarchy-hyprland-workspace-layout-toggle") !== -1
-
-          if (isBgCycle && root.lockBackground) {
-            root.notifyBlocked("background")
-            return
-          }
-          if (isLayoutToggle && root.lockLayout) {
-            root.notifyBlocked("layout")
-            return
-          }
-        }
-        return origExec(command)
-      }
-    }
-
-    // Also traverse parent tree to protect bar root if available
-    patchBarTree(root)
-  }
-
-  function patchBarTree(item) {
-    var cur = item
-    while (cur) {
-      if (typeof cur.cycleBackground === "function" && !cur._lockTopBarPatched) {
-        cur._lockTopBarPatched = true
-        var origCycle = cur.cycleBackground
-        cur.cycleBackground = function() {
-          if (root.isLocked && root.lockBackground) {
-            root.notifyBlocked("background")
-            return
-          }
-          return origCycle.apply(this, arguments)
-        }
-      }
-
-      if (typeof cur.run === "function" && !cur._lockTopBarRunPatched) {
-        cur._lockTopBarRunPatched = true
-        var origRun = cur.run
-        cur.run = function(cmd) {
-          if (root.isLocked && root.lockLayout && typeof cmd === "string" && cmd.indexOf("omarchy-hyprland-workspace-layout-toggle") !== -1) {
-            root.notifyBlocked("layout")
-            return
-          }
-          return origRun.apply(this, arguments)
-        }
-      }
-
-      if (typeof cur.beginBarMove === "function" && !cur._lockTopBarMovePatched) {
-        cur._lockTopBarMovePatched = true
-        var origMove = cur.beginBarMove
-        cur.beginBarMove = function(win) {
-          if (root.isLocked) return
-          return origMove.apply(this, arguments)
-        }
-      }
-
-      cur = cur.parent
-    }
-  }
-
-  // Persistence
+  // Persistence via FileView
   FileView {
     id: stateFile
     path: root.stateFilePath
-    watchChanges: true
+    watchChanges: false
+    atomicWrites: true
     printErrors: false
-    onFileChanged: root.loadState()
+    onLoaded: root.loadState(text())
   }
 
-  function loadState() {
-    var raw = stateFile.text()
-    if (!raw) return
+  function loadState(raw) {
+    var content = raw !== undefined ? raw : stateFile.text()
+    if (!content) return
     try {
-      var data = JSON.parse(raw)
+      var data = JSON.parse(content)
       if (data && typeof data === "object") {
         if (typeof data.locked === "boolean") isLocked = data.locked
         if (typeof data.lockBackground === "boolean") lockBackground = data.lockBackground
@@ -303,7 +241,7 @@ Ui.BarWidget {
         if (typeof data.showNotifications === "boolean") showNotifications = data.showNotifications
       }
     } catch (e) {
-      // ignore JSON parse error
+      // ignore parse errors
     }
   }
 
@@ -317,9 +255,26 @@ Ui.BarWidget {
     stateFile.setText(JSON.stringify(payload, null, 2) + "\n")
   }
 
+  // Automatic wrapper installation to ~/.local/bin
+  Process {
+    id: installerProc
+    command: [
+      "/bin/bash", "-c",
+      "mkdir -p \"$HOME/.local/bin\" \"$HOME/.local/state/omarchy\" && " +
+      "if [ -d \"" + root.pluginBinDir + "\" ]; then " +
+      "  cp -f \"" + root.pluginBinDir + "/omarchy-bar\" \"$HOME/.local/bin/omarchy-bar\" 2>/dev/null; " +
+      "  cp -f \"" + root.pluginBinDir + "/omarchy-hyprland-workspace-layout-toggle\" \"$HOME/.local/bin/omarchy-hyprland-workspace-layout-toggle\" 2>/dev/null; " +
+      "  chmod +x \"$HOME/.local/bin/omarchy-bar\" \"$HOME/.local/bin/omarchy-hyprland-workspace-layout-toggle\" 2>/dev/null; " +
+      "fi"
+    ]
+  }
+
   Component.onCompleted: {
+    isLocked = setting("locked", isLocked)
+    lockBackground = setting("lockBackground", lockBackground)
+    lockLayout = setting("lockLayout", lockLayout)
+    showNotifications = setting("showNotifications", showNotifications)
     loadState()
-    installHooks()
-    Qt.callLater(installHooks)
+    installerProc.running = true
   }
 }

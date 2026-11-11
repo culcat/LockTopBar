@@ -1,0 +1,12 @@
+#!/bin/bash
+# LockTopBar wrapper for omarchy-hyprland-workspace-layout-toggle
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/lock-topbar.json"
+
+if [[ -f "$STATE_FILE" ]] && jq -e '.locked and .lockLayout' "$STATE_FILE" >/dev/null 2>&1; then
+  if jq -e '.showNotifications' "$STATE_FILE" >/dev/null 2>&1; then
+    omarchy-notification-send -p -r 994821 -g 󰌾 "Top Bar Locked" "Workspace layout toggle is blocked"
+  fi
+  exit 0
+fi
+
+exec /usr/share/omarchy/bin/omarchy-hyprland-workspace-layout-toggle "$@"

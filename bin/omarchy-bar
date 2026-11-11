@@ -1,0 +1,14 @@
+#!/bin/bash
+# LockTopBar wrapper for omarchy-bar
+STATE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/lock-topbar.json"
+
+if [[ "$*" == *"background cycle"* || "$*" == *"background none"* || "$*" == *"background glassy"* || "$*" == *"background opaque"* ]]; then
+  if [[ -f "$STATE_FILE" ]] && jq -e '.locked and .lockBackground' "$STATE_FILE" >/dev/null 2>&1; then
+    if jq -e '.showNotifications' "$STATE_FILE" >/dev/null 2>&1; then
+      omarchy-notification-send -p -r 994821 -g 󰌾 "Top Bar Locked" "Bar background change is blocked"
+    fi
+    exit 0
+  fi
+fi
+
+exec /usr/share/omarchy/bin/omarchy-bar "$@"
