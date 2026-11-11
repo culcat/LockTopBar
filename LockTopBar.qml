@@ -38,13 +38,13 @@ Ui.BarWidget {
   }
 
   // Visual geometry
-  implicitWidth: iconButton.width
-  implicitHeight: iconButton.height
+  implicitWidth: iconButton.implicitWidth
+  implicitHeight: iconButton.implicitHeight
 
   // Main Bar Button
   Ui.BarIconButton {
     id: iconButton
-    anchors.centerIn: parent
+    anchors.fill: parent
 
     bar: root.bar
     text: root.isLocked ? "󰌾" : "󰌿"
@@ -55,11 +55,11 @@ Ui.BarWidget {
 
     tooltipText: root.isLocked ? root.tr("tooltip.locked") : root.tr("tooltip.unlocked")
 
-    onPressed: function(mouse) {
-      if (mouse.button === Qt.LeftButton) {
-        root.toggleLock()
-      } else if (mouse.button === Qt.RightButton) {
+    onPressed: function(button) {
+      if (button === Qt.RightButton) {
         root.popupOpen = !root.popupOpen
+      } else {
+        root.toggleLock()
       }
     }
   }
