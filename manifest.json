@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.culcat.lock-topbar",
+  "name": "Lock Top Bar",
+  "version": "1.0.0",
+  "author": "culcat",
+  "license": "MIT",
+  "description": "Top bar lock icon widget that prevents accidental transparency changes and workspace layout cycling on click.",
+  "homepage": "https://github.com/culcat/LockTopBar",
+  "repository": "https://github.com/culcat/LockTopBar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "LockTopBar.qml"
+  },
+  "barWidget": {
+    "displayName": "Lock Top Bar",
+    "description": "Lock icon widget that protects the bar against unintended background changes and workspace layout changes.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "locked": true,
+      "lockBackground": true,
+      "lockLayout": true,
+      "showNotifications": true
+    },
+    "schema": [
+      {
+        "key": "locked",
+        "type": "boolean",
+        "label": "Locked by default",
+        "description": "Lock top bar automatically when shell loads.",
+        "defaultValue": true
+      },
+      {
+        "key": "lockBackground",
+        "type": "boolean",
+        "label": "Lock bar background",
+        "description": "Prevent accidental double-click transparency cycling.",
+        "defaultValue": true
+      },
+      {
+        "key": "lockLayout",
+        "type": "boolean",
+        "label": "Lock workspace layout",
+        "description": "Prevent accidental workspace layout toggling when clicking active workspace.",
+        "defaultValue": true
+      },
+      {
+        "key": "showNotifications",
+        "type": "boolean",
+        "label": "Show notifications",
+        "description": "Show desktop notification when an action is blocked.",
+        "defaultValue": true
+      }
+    ]
+  }
+}

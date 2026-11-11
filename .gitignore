@@ -1,0 +1,8 @@
+*.qmlc
+*.jsc
+*.bak
+*~
+.DS_Store
+.idea/
+.vscode/
+state.json
