@@ -26,25 +26,23 @@ When locked, it shields the top bar from unintended modifications caused by acci
 
 ## Installation
 
-### Via Omarchy plugin manager:
+Install using the Omarchy plugin manager:
 
 ```bash
 omarchy plugin add https://github.com/culcat/LockTopBar.git --enable
 ```
 
-### Manual installation:
-
-```bash
-git clone https://github.com/culcat/LockTopBar.git \
-  ~/.config/omarchy/plugins/io.github.culcat.lock-topbar
-omarchy-shell shell rescanPlugins
-omarchy plugin enable io.github.culcat.lock-topbar
-```
-
-To position the widget on the top bar (e.g. right section):
+Position the widget on the top bar (e.g. right section):
 
 ```bash
 omarchy bar move io.github.culcat.lock-topbar --section right
+```
+
+### Removal
+
+```bash
+omarchy plugin disable io.github.culcat.lock-topbar
+omarchy plugin remove io.github.culcat.lock-topbar
 ```
 
 ## Keybindings & IPC
@@ -80,4 +78,4 @@ Settings can also be configured inline in `~/.config/omarchy/shell.json`:
 
 ## License
 
-MIT © culcat
+MIT © 2026 Aleksandr (culcat)

@@ -26,25 +26,23 @@
 
 ## Установка
 
-### Через менеджер плагинов Omarchy:
+Установка через менеджер плагинов Omarchy:
 
 ```bash
 omarchy plugin add https://github.com/culcat/LockTopBar.git --enable
-```
-
-### Вручную:
-
-```bash
-git clone https://github.com/culcat/LockTopBar.git \
-  ~/.config/omarchy/plugins/io.github.culcat.lock-topbar
-omarchy-shell shell rescanPlugins
-omarchy plugin enable io.github.culcat.lock-topbar
 ```
 
 Перемещение виджета (например, в правую секцию):
 
 ```bash
 omarchy bar move io.github.culcat.lock-topbar --section right
+```
+
+### Удаление
+
+```bash
+omarchy plugin disable io.github.culcat.lock-topbar
+omarchy plugin remove io.github.culcat.lock-topbar
 ```
 
 ## Горячие клавиши и IPC
@@ -66,4 +64,4 @@ omarchy-shell io.github.culcat.lock-topbar status
 
 ## Лицензия
 
-MIT © culcat
+MIT © 2026 Aleksandr (culcat)
